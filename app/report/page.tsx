@@ -1,514 +1,458 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
-export default function ReportPage() {
-  const [photo, setPhoto] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+type LocationData = {
+  latitude: number;
+  longitude: number;
+};
 
-  const [latitude, setLatitude] = useState<number | null>(null);
-  const [longitude, setLongitude] = useState<number | null>(null);
+const wasteTypes = [
+  { name: "Garbage", icon: "🗑️" },
+  { name: "Plastic", icon: "🧴" },
+  { name: "Overflowing Bin", icon: "🚮" },
+  { name: "Construction", icon: "🧱" },
+  { name: "Litter", icon: "🛍️" },
+  { name: "Other", icon: "•••" },
+];
 
+export default function Home() {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [fileName, setFileName] = useState("");
+  const [location, setLocation] = useState<LocationData | null>(null);
   const [locationLoading, setLocationLoading] = useState(false);
-  const [locationMessage, setLocationMessage] = useState("");
-
+  const [selectedType, setSelectedType] = useState("Garbage");
   const [comment, setComment] = useState("");
-
   const [submitted, setSubmitted] = useState(false);
 
-  const [submittedData, setSubmittedData] = useState<{
-    photoName: string;
-    latitude: number;
-    longitude: number;
-    comment: string;
-    createdAt: string;
-  } | null>(null);
+  const handlePhoto = (file?: File) => {
+    if (!file) return;
 
-  // ================================
-  // PHOTO CAPTURE
-  // ================================
+    const imageUrl = URL.createObjectURL(file);
 
-  const handlePhotoChange = (
+    setPhoto(imageUrl);
+    setFileName(file.name);
+  };
+
+  const handleFileChange = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
 
-    if (!file) return;
-
-    setPhoto(file);
-
-    const imageUrl = URL.createObjectURL(file);
-    setPreview(imageUrl);
-
-    setSubmitted(false);
+    if (file) {
+      handlePhoto(file);
+    }
   };
 
-  // ================================
-  // GPS LOCATION
-  // ================================
+  const takePhoto = () => {
+    fileInputRef.current?.click();
+  };
+
+  const removePhoto = () => {
+    setPhoto(null);
+    setFileName("");
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   const getLocation = () => {
     if (!navigator.geolocation) {
-      setLocationMessage(
-        "❌ Geolocation is not supported by your browser."
-      );
+      alert("Geolocation is not supported by your browser.");
       return;
     }
 
     setLocationLoading(true);
-    setLocationMessage("📍 Detecting your location...");
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-
-        setLatitude(lat);
-        setLongitude(lng);
-
-        setLocationLoading(false);
-        setLocationMessage(
-          "✅ Location captured successfully!"
-        );
-      },
-
-      (error) => {
-        console.error(error);
+        setLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
 
         setLocationLoading(false);
-        setLocationMessage(
-          "❌ Unable to get location. Please allow location permission."
-        );
       },
-
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
+      () => {
+        alert(
+          "Unable to get your location. Please allow location permission."
+        );
+        setLocationLoading(false);
       }
     );
   };
 
-  // ================================
-  // REPORT ISSUE
-  // ================================
-
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
 
-    // Check photo
     if (!photo) {
-      alert("Please take or select a waste photo.");
+      alert("Please upload a photo of the waste.");
       return;
     }
 
-    // Check location
-    if (latitude === null || longitude === null) {
-      alert("Please capture your current location.");
+    if (!location) {
+      alert("Please capture your location.");
       return;
     }
 
-    // Automatically capture timestamp
-    const createdAt = new Date().toISOString();
-
-    const reportData = {
-      photoName: photo.name,
-      latitude,
-      longitude,
-      comment,
-      createdAt,
-    };
-
-    console.log("SwachhLens Report:", reportData);
-
-    setSubmittedData(reportData);
     setSubmitted(true);
   };
 
-  return (
-    <main className="min-h-screen bg-gray-50 px-4 py-8 text-gray-900">
+  const resetReport = () => {
+    setSubmitted(false);
+    setPhoto(null);
+    setFileName("");
+    setLocation(null);
+    setSelectedType("Garbage");
+    setComment("");
 
-      <div className="mx-auto max-w-2xl">
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
-        {/* ================================
-            HEADER
-        ================================= */}
+  if (submitted) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 px-4 py-8">
+        <div className="mx-auto flex min-h-[85vh] max-w-2xl items-center justify-center">
+          <div className="w-full rounded-3xl border border-green-200 bg-white p-6 shadow-xl sm:p-10">
+            <div className="text-center">
+              <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-green-100 text-5xl">
+                ✅
+              </div>
 
-        <div className="mb-8 text-center">
+              <h1 className="text-3xl font-bold text-green-700">
+                Report Submitted!
+              </h1>
 
-          <div className="mb-3 text-5xl">
-            ♻️
+              <p className="mt-2 text-gray-600">
+                Thank you for helping keep your area clean.
+              </p>
+            </div>
+
+            <div className="mt-8 space-y-5 rounded-2xl bg-gray-50 p-5">
+              <div>
+                <p className="font-semibold text-gray-800">📷 Photo</p>
+                <p className="mt-1 break-all text-gray-600">
+                  {fileName}
+                </p>
+              </div>
+
+              <div>
+                <p className="font-semibold text-gray-800">
+                  📍 Location
+                </p>
+                <p className="mt-1 text-gray-600">
+                  Latitude: {location?.latitude.toFixed(6)}
+                </p>
+                <p className="text-gray-600">
+                  Longitude: {location?.longitude.toFixed(6)}
+                </p>
+              </div>
+
+              <div>
+                <p className="font-semibold text-gray-800">
+                  🗑️ Waste Type
+                </p>
+                <p className="mt-1 text-gray-600">
+                  {selectedType}
+                </p>
+              </div>
+
+              <div>
+                <p className="font-semibold text-gray-800">
+                  💬 Comment
+                </p>
+
+                <p className="mt-1 whitespace-pre-wrap text-gray-600">
+                  {comment || "No comment added."}
+                </p>
+              </div>
+
+              <div>
+                <p className="font-semibold text-gray-800">
+                  🕐 Reported At
+                </p>
+
+                <p className="mt-1 text-gray-600">
+                  {new Date().toLocaleString()}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={resetReport}
+              className="mt-7 w-full rounded-xl bg-green-700 py-3.5 font-semibold text-white transition hover:bg-green-800"
+            >
+              Report Another Issue
+            </button>
           </div>
-
-          <h1 className="text-3xl font-bold text-green-700">
-            SwachhLens
-          </h1>
-
-          <p className="mt-2 text-gray-600">
-            Report a waste issue in your area
-          </p>
-
         </div>
+      </main>
+    );
+  }
 
+  return (
+    <main className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 px-3 py-5 sm:px-6 sm:py-8">
+      <div className="mx-auto w-full max-w-2xl">
 
-        {/* ================================
-            REPORT FORM
-        ================================= */}
+        {/* Header */}
+        <header className="mb-6 rounded-3xl bg-white px-5 py-5 shadow-sm sm:px-8">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              className="text-3xl leading-none text-green-700"
+              onClick={() => window.history.back()}
+            >
+              ←
+            </button>
 
-        <div className="rounded-2xl bg-white p-6 shadow-lg">
+            <div className="flex-1 text-center">
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-3xl">♻️</span>
 
-          <form
-            onSubmit={handleSubmit}
-            className="space-y-7"
-          >
+                <h1 className="text-2xl font-bold text-green-800 sm:text-3xl">
+                  SwachhLens
+                </h1>
+              </div>
 
-            {/* ================================
-                PHOTO
-            ================================= */}
+              <p className="mt-1 text-sm text-gray-600 sm:text-base">
+                Report a waste issue in your area
+              </p>
+            </div>
 
-            <section>
+            <div className="w-8" />
+          </div>
+        </header>
 
-              <h2 className="mb-3 text-xl font-semibold text-gray-900">
-                📷 Waste Photo
-              </h2>
+        <form onSubmit={handleSubmit} className="space-y-5">
 
-              <label
-                htmlFor="photo"
-                className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-green-400 bg-green-50 p-8 transition hover:bg-green-100"
+          {/* PHOTO SECTION */}
+          <section className="rounded-3xl bg-white p-5 shadow-md sm:p-7">
+            <h2 className="mb-4 flex items-center gap-2 text-xl font-bold text-gray-900">
+              <span className="text-2xl">📷</span>
+              Waste Photo
+            </h2>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+
+            {!photo ? (
+              <button
+                type="button"
+                onClick={takePhoto}
+                className="flex min-h-[250px] w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-green-300 bg-green-50 px-5 text-center transition hover:bg-green-100"
               >
-
-                <div className="mb-3 text-4xl">
-                  📸
+                <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-green-200 text-5xl">
+                  📷
                 </div>
 
-                <p className="font-semibold text-gray-800">
+                <p className="text-lg font-bold text-gray-900">
                   Take a Photo / Choose Photo
                 </p>
 
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-2 text-sm text-gray-600">
                   Capture a clear photo of the waste issue
                 </p>
-
-                <input
-                  id="photo"
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handlePhotoChange}
-                  className="hidden"
-                />
-
-              </label>
-
-
-              {/* PHOTO PREVIEW */}
-
-              {preview && (
-                <div className="mt-4 overflow-hidden rounded-xl border border-gray-200">
-
+              </button>
+            ) : (
+              <div>
+                <div className="relative overflow-hidden rounded-2xl">
                   <img
-                    src={preview}
+                    src={photo}
                     alt="Waste preview"
-                    className="max-h-80 w-full object-cover"
+                    className="h-64 w-full object-cover sm:h-80"
                   />
 
-                  <div className="bg-gray-50 p-3 text-sm text-gray-600">
-                    📄 {photo?.name}
-                  </div>
-
+                  <button
+                    type="button"
+                    onClick={removePhoto}
+                    className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-red-500 text-xl text-white shadow-lg hover:bg-red-600"
+                  >
+                    ×
+                  </button>
                 </div>
-              )}
 
-            </section>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={takePhoto}
+                    className="rounded-xl border border-green-500 py-3 font-semibold text-green-700 transition hover:bg-green-50"
+                  >
+                    🔄 Retake
+                  </button>
 
+                  <button
+                    type="button"
+                    onClick={removePhoto}
+                    className="rounded-xl border border-red-400 py-3 font-semibold text-red-600 transition hover:bg-red-50"
+                  >
+                    🗑️ Remove
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
 
-            {/* ================================
-                GPS LOCATION
-            ================================= */}
+          {/* LOCATION SECTION */}
+          <section className="rounded-3xl bg-white p-5 shadow-md sm:p-7">
+            <h2 className="mb-4 flex items-center gap-2 text-xl font-bold text-gray-900">
+              <span className="text-2xl">📍</span>
+              Location
+            </h2>
 
-            <section>
-
-              <h2 className="mb-3 text-xl font-semibold text-gray-900">
-                📍 Location
-              </h2>
-
-              <div className="rounded-xl bg-gray-100 p-4">
-
-                {latitude !== null &&
-                longitude !== null ? (
-
-                  <div>
-
-                    <p className="font-semibold text-green-700">
-                      ✅ Location captured
-                    </p>
-
-                    <div className="mt-3 grid grid-cols-2 gap-3">
-
-                      <div className="rounded-lg bg-white p-3">
-
-                        <p className="text-sm text-gray-500">
-                          Latitude
-                        </p>
-
-                        <p className="font-semibold text-gray-900">
-                          {latitude.toFixed(6)}
-                        </p>
-
-                      </div>
-
-
-                      <div className="rounded-lg bg-white p-3">
-
-                        <p className="text-sm text-gray-500">
-                          Longitude
-                        </p>
-
-                        <p className="font-semibold text-gray-900">
-                          {longitude.toFixed(6)}
-                        </p>
-
-                      </div>
-
-                    </div>
-
-                  </div>
-
-                ) : (
-
-                  <p className="text-gray-600">
+            <div className="rounded-2xl border border-green-200 bg-green-50 p-4">
+              {!location ? (
+                <>
+                  <p className="mb-4 text-gray-700">
                     GPS location has not been captured yet.
                   </p>
 
-                )}
+                  <button
+                    type="button"
+                    onClick={getLocation}
+                    disabled={locationLoading}
+                    className="w-full rounded-xl bg-green-700 py-3.5 font-semibold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {locationLoading
+                      ? "Getting Location..."
+                      : "📍 Get My Current Location"}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="mb-3 flex items-center gap-2 font-semibold text-green-700">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-green-200">
+                      ✓
+                    </span>
 
+                    Location captured
+                  </div>
 
-                {/* LOCATION BUTTON */}
-
-                <button
-                  type="button"
-                  onClick={getLocation}
-                  disabled={locationLoading}
-                  className="mt-4 w-full rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
-                >
-
-                  {locationLoading
-                    ? "📍 Detecting Location..."
-                    : "📍 Get My Current Location"}
-
-                </button>
-
-
-                {locationMessage && (
-                  <p className="mt-3 text-center text-sm text-gray-700">
-                    {locationMessage}
+                  <p className="text-sm text-gray-700">
+                    Latitude: {location.latitude.toFixed(6)}
                   </p>
-                )}
 
-              </div>
+                  <p className="text-sm text-gray-700">
+                    Longitude: {location.longitude.toFixed(6)}
+                  </p>
 
-            </section>
+                  <button
+                    type="button"
+                    onClick={getLocation}
+                    className="mt-4 rounded-xl border border-green-500 px-5 py-2.5 font-semibold text-green-700 hover:bg-green-100"
+                  >
+                    Change Location
+                  </button>
+                </>
+              )}
+            </div>
+          </section>
 
+          {/* WASTE TYPE */}
+          <section className="rounded-3xl bg-white p-5 shadow-md sm:p-7">
+            <h2 className="mb-4 flex items-center gap-2 text-xl font-bold text-gray-900">
+              <span className="text-2xl">🗑️</span>
+              Waste Type
+              <span className="text-sm font-normal text-gray-500">
+                (Optional)
+              </span>
+            </h2>
 
-            {/* ================================
-                TIMESTAMP
-            ================================= */}
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {wasteTypes.map((type) => {
+                const active = selectedType === type.name;
 
-            <section>
+                return (
+                  <button
+                    type="button"
+                    key={type.name}
+                    onClick={() => setSelectedType(type.name)}
+                    className={`min-h-[90px] rounded-2xl border-2 px-2 py-3 transition ${
+                      active
+                        ? "border-green-600 bg-green-50 text-green-700"
+                        : "border-gray-200 bg-white text-gray-800 hover:border-green-300"
+                    }`}
+                  >
+                    <div className="text-2xl">{type.icon}</div>
 
-              <h2 className="mb-3 text-xl font-semibold text-gray-900">
-                🕐 Timestamp
+                    <div className="mt-2 text-sm font-semibold">
+                      {type.name}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* TIMESTAMP */}
+          <section className="rounded-3xl bg-white p-5 shadow-md sm:p-7">
+            <h2 className="mb-4 flex items-center gap-2 text-xl font-bold text-gray-900">
+              <span className="text-2xl">🕐</span>
+              Timestamp
+            </h2>
+
+            <div className="flex items-center justify-between rounded-2xl border border-green-200 bg-green-50 p-4">
+              <p className="text-sm text-gray-700">
+                The current date and time will be automatically captured.
+              </p>
+
+              <span className="ml-3 shrink-0 rounded-full bg-green-200 px-3 py-1 text-xs font-semibold text-green-700">
+                Auto
+              </span>
+            </div>
+          </section>
+
+          {/* COMMENT */}
+          <section className="rounded-3xl bg-white p-5 shadow-md sm:p-7">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="flex items-center gap-2 text-xl font-bold text-gray-900">
+                <span className="text-2xl">💬</span>
+                Comment
+                <span className="text-sm font-normal text-gray-500">
+                  (Optional)
+                </span>
               </h2>
 
-              <div className="rounded-xl bg-gray-100 p-4 text-gray-700">
-
-                <p>
-                  The current date and time will be
-                  automatically captured when you report
-                  the issue.
-                </p>
-
-              </div>
-
-            </section>
-
-
-            {/* ================================
-                COMMENT
-            ================================= */}
-
-            <section>
-
-              <label
-                htmlFor="comment"
-                className="mb-3 block text-xl font-semibold text-gray-900"
-              >
-                💬 Comment
-              </label>
-
-
-              <textarea
-                id="comment"
-                value={comment}
-                onChange={(event) =>
-                  setComment(event.target.value)
-                }
-                placeholder="What's happening? Describe the waste issue..."
-                rows={5}
-                maxLength={500}
-                className="w-full resize-none rounded-xl border border-gray-300 bg-white p-4 text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-200"
-              />
-
-
-              <div className="mt-2 flex justify-between">
-
-                <p className="text-sm text-gray-500">
-                  Optional
-                </p>
-
-                <p className="text-sm text-gray-500">
-                  {comment.length}/500
-                </p>
-
-              </div>
-
-            </section>
-
-
-            {/* ================================
-                REPORT ISSUE BUTTON
-            ================================= */}
-
-            <button
-              type="submit"
-              className="w-full rounded-xl bg-green-600 px-6 py-4 text-lg font-bold text-white shadow-md transition hover:bg-green-700 active:scale-[0.99]"
-            >
-              🚮 REPORT ISSUE
-            </button>
-
-          </form>
-
-
-          {/* ================================
-              SUCCESS MESSAGE
-          ================================= */}
-
-          {submitted && submittedData && (
-
-            <div className="mt-6 rounded-xl border border-green-300 bg-green-50 p-5">
-
-              <div className="mb-4 flex items-center gap-3">
-
-                <span className="text-3xl">
-                  ✅
-                </span>
-
-                <div>
-
-                  <h3 className="text-lg font-bold text-green-800">
-                    Report submitted successfully!
-                  </h3>
-
-                  <p className="text-sm text-green-700">
-                    Your waste issue has been captured.
-                  </p>
-
-                </div>
-
-              </div>
-
-
-              {/* REPORT SUMMARY */}
-
-              <div className="space-y-4 rounded-xl bg-white p-5 text-sm text-gray-800">
-
-                {/* PHOTO */}
-
-                <div>
-
-                  <strong className="text-base">
-                    📷 Photo:
-                  </strong>
-
-                  <p className="mt-1 break-all text-gray-600">
-                    {submittedData.photoName}
-                  </p>
-
-                </div>
-
-
-                {/* LOCATION */}
-
-                <div>
-
-                  <strong className="text-base">
-                    📍 Location:
-                  </strong>
-
-                  <p className="mt-1 text-gray-600">
-                    Latitude:{" "}
-                    {submittedData.latitude.toFixed(6)}
-                  </p>
-
-                  <p className="text-gray-600">
-                    Longitude:{" "}
-                    {submittedData.longitude.toFixed(6)}
-                  </p>
-
-                </div>
-
-
-                {/* COMMENT */}
-
-                <div>
-
-                  <strong className="text-base">
-                    💬 Comment:
-                  </strong>
-
-                  <p className="mt-1 break-words text-gray-600">
-                    {submittedData.comment ||
-                      "No comment provided"}
-                  </p>
-
-                </div>
-
-
-                {/* TIMESTAMP */}
-
-                <div>
-
-                  <strong className="text-base">
-                    🕐 Reported at:
-                  </strong>
-
-                  <p className="mt-1 text-gray-600">
-                    {new Date(
-                      submittedData.createdAt
-                    ).toLocaleString()}
-                  </p>
-
-                </div>
-
-              </div>
-
+              <span className="text-xs text-gray-500">
+                {comment.length}/500
+              </span>
             </div>
 
-          )}
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value.slice(0, 500))}
+              rows={5}
+              placeholder="What's happening? Describe the waste issue..."
+              className="w-full resize-none rounded-2xl border border-gray-300 p-4 text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-100"
+            />
+          </section>
 
-        </div>
+          {/* SUBMIT */}
+          <button
+            type="submit"
+            className="w-full rounded-2xl bg-green-700 py-4 text-lg font-bold tracking-wide text-white shadow-lg transition hover:bg-green-800 active:scale-[0.99]"
+          >
+            ➤ &nbsp; REPORT ISSUE
+          </button>
 
-
-        {/* ================================
-            FOOTER
-        ================================= */}
-
-        <p className="mt-6 text-center text-sm text-gray-500">
-          SwachhLens • AI-powered waste response system
-        </p>
-
+          {/* FOOTER MESSAGE */}
+          <div className="pb-6 text-center">
+            <p className="text-sm text-green-700">
+              🛡️ Thank you for keeping our city clean! 🌱
+            </p>
+          </div>
+        </form>
       </div>
-
     </main>
   );
 }
