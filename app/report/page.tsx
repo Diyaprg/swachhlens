@@ -108,7 +108,7 @@ export default function ReportPage() {
       return;
     }
 
-    // Capture timestamp automatically
+    // Automatically capture timestamp
     const createdAt = new Date().toISOString();
 
     const reportData = {
@@ -119,8 +119,6 @@ export default function ReportPage() {
       createdAt,
     };
 
-    // For Phase 2, we capture the report locally.
-    // Phase 3 will send this data to the backend.
     console.log("SwachhLens Report:", reportData);
 
     setSubmittedData(reportData);
@@ -132,7 +130,7 @@ export default function ReportPage() {
 
       <div className="mx-auto max-w-2xl">
 
-        {/* =================================
+        {/* ================================
             HEADER
         ================================= */}
 
@@ -153,7 +151,7 @@ export default function ReportPage() {
         </div>
 
 
-        {/* =================================
+        {/* ================================
             REPORT FORM
         ================================= */}
 
@@ -164,7 +162,7 @@ export default function ReportPage() {
             className="space-y-7"
           >
 
-            {/* =================================
+            {/* ================================
                 PHOTO
             ================================= */}
 
@@ -203,7 +201,7 @@ export default function ReportPage() {
               </label>
 
 
-              {/* IMAGE PREVIEW */}
+              {/* PHOTO PREVIEW */}
 
               {preview && (
                 <div className="mt-4 overflow-hidden rounded-xl border border-gray-200">
@@ -224,7 +222,7 @@ export default function ReportPage() {
             </section>
 
 
-            {/* =================================
+            {/* ================================
                 GPS LOCATION
             ================================= */}
 
@@ -312,7 +310,7 @@ export default function ReportPage() {
             </section>
 
 
-            {/* =================================
+            {/* ================================
                 TIMESTAMP
             ================================= */}
 
@@ -335,7 +333,7 @@ export default function ReportPage() {
             </section>
 
 
-            {/* =================================
+            {/* ================================
                 COMMENT
             ================================= */}
 
@@ -377,7 +375,7 @@ export default function ReportPage() {
             </section>
 
 
-            {/* =================================
+            {/* ================================
                 REPORT ISSUE BUTTON
             ================================= */}
 
@@ -385,15 +383,13 @@ export default function ReportPage() {
               type="submit"
               className="w-full rounded-xl bg-green-600 px-6 py-4 text-lg font-bold text-white shadow-md transition hover:bg-green-700 active:scale-[0.99]"
             >
-
               🚮 REPORT ISSUE
-
             </button>
 
           </form>
 
 
-          {/* =================================
+          {/* ================================
               SUCCESS MESSAGE
           ================================= */}
 
@@ -424,18 +420,30 @@ export default function ReportPage() {
 
               {/* REPORT SUMMARY */}
 
-              <div className="space-y-3 rounded-xl bg-white p-4 text-sm text-gray-800">
+              <div className="space-y-4 rounded-xl bg-white p-5 text-sm text-gray-800">
+
+                {/* PHOTO */}
 
                 <div>
-                  <strong>📷 Photo:</strong>
-                  <p className="mt-1 text-gray-600">
+
+                  <strong className="text-base">
+                    📷 Photo:
+                  </strong>
+
+                  <p className="mt-1 break-all text-gray-600">
                     {submittedData.photoName}
                   </p>
+
                 </div>
 
 
+                {/* LOCATION */}
+
                 <div>
-                  <strong>📍 Location:</strong>
+
+                  <strong className="text-base">
+                    📍 Location:
+                  </strong>
 
                   <p className="mt-1 text-gray-600">
                     Latitude:{" "}
@@ -450,11 +458,15 @@ export default function ReportPage() {
                 </div>
 
 
+                {/* COMMENT */}
+
                 <div>
 
-                  <strong>💬 Comment:</strong>
+                  <strong className="text-base">
+                    💬 Comment:
+                  </strong>
 
-                  <p className="mt-1 text-gray-600">
+                  <p className="mt-1 break-words text-gray-600">
                     {submittedData.comment ||
                       "No comment provided"}
                   </p>
@@ -462,9 +474,13 @@ export default function ReportPage() {
                 </div>
 
 
+                {/* TIMESTAMP */}
+
                 <div>
 
-                  <strong>🕐 Reported at:</strong>
+                  <strong className="text-base">
+                    🕐 Reported at:
+                  </strong>
 
                   <p className="mt-1 text-gray-600">
                     {new Date(
@@ -476,17 +492,6 @@ export default function ReportPage() {
 
               </div>
 
-
-              {/* PHASE 3 NOTE */}
-
-              <div className="mt-4 rounded-lg bg-blue-50 p-3 text-sm text-blue-800">
-
-                <strong>Next step:</strong>{" "}
-                In Phase 3, this report will be sent to
-                the backend for AI waste classification.
-
-              </div>
-
             </div>
 
           )}
@@ -494,7 +499,7 @@ export default function ReportPage() {
         </div>
 
 
-        {/* =================================
+        {/* ================================
             FOOTER
         ================================= */}
 
