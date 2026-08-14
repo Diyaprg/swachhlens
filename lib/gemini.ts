@@ -82,33 +82,27 @@ Do NOT recommend an action.
 Only classify what is visible.
 `;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: [
+  const interaction = await ai.interactions.create({
+    model: "gemini-3.6-flash",
+    input: [
       {
-        role: "user",
-        parts: [
-          {
-            inlineData: {
-              mimeType,
-              data: imageBase64,
-            },
-          },
-          {
-            text: prompt,
-          },
-        ],
+        type: "image",
+        mime_type: mimeType,
+        data: imageBase64,
+      },
+      {
+        type: "text",
+        text: prompt,
       },
     ],
   });
 
-  const text = response.text?.trim();
+  const text = interaction.output_text?.trim();
 
   if (!text) {
     throw new Error("Gemini returned an empty response");
   }
 
-  // Remove markdown code fences if Gemini adds them.
   const cleaned = text
     .replace(/^```json\s*/i, "")
     .replace(/^```\s*/i, "")
@@ -120,7 +114,9 @@ Only classify what is visible.
   try {
     result = JSON.parse(cleaned);
   } catch {
-    throw new Error("Gemini returned invalid JSON");
+    throw new Error(
+      `Gemini returned invalid JSON: ${cleaned}`
+    );
   }
 
   if (!allowedWasteTypes.includes(result.wasteType)) {
