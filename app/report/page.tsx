@@ -14,6 +14,7 @@ const wasteTypes = [
   { name: "Construction", icon: "🧱" },
   { name: "Litter", icon: "🛍️" },
   { name: "Other", icon: "•••" },
+  
 ];
 
 export default function Home() {
