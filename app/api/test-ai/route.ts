@@ -15,17 +15,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await classifyWasteImage(
+    console.log("Starting AI test...");
+
+    const classification = await classifyWasteImage(
       body.imageBase64,
       body.imageMimeType
     );
 
+    console.log("AI classification:", classification);
+
     return NextResponse.json({
       success: true,
-      classification: result,
+      classification,
     });
   } catch (error) {
-    console.error("AI classification error:", error);
+    console.error("AI test error:", error);
 
     return NextResponse.json(
       {
