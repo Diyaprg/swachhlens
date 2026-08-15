@@ -62,6 +62,11 @@ export interface Complaint {
 
   comment: string;
 
+  volumeScore: number;
+  locationScore: number;
+  frequencyScore: number;
+  ageScore: number;
+
   priorityScore: number;
   priorityLevel: PriorityLevel;
 
