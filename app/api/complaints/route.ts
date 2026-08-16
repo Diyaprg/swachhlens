@@ -1,91 +1,63 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebase-admin";
 import { classifyWasteImage } from "@/lib/gemini";
-import { runDecisionEngine } from "@/decision-engine";
-import type {
-  Complaint,
-  ComplaintInput,
-} from "@/types/complaint";
+import { db } from "@/lib/firebase-admin";
+import { runDecisionEngine } from "@/lib/decision-engine";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as Partial<ComplaintInput>;
+    const body = await request.json();
 
-    // Validate required fields
+    // Validate image
+    if (!body.imageBase64 || !body.imageMimeType) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "imageBase64 and imageMimeType are required",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validate location
     if (
-      !body.imageBase64 ||
-      !body.imageMimeType ||
       typeof body.lat !== "number" ||
       typeof body.lng !== "number"
     ) {
       return NextResponse.json(
         {
           success: false,
-          error:
-            "imageBase64, imageMimeType, lat and lng are required.",
+          error: "Valid latitude and longitude are required",
         },
         { status: 400 }
       );
     }
 
-    // Validate coordinates
-    if (
-      body.lat < -90 ||
-      body.lat > 90 ||
-      body.lng < -180 ||
-      body.lng > 180
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Invalid latitude or longitude.",
-        },
-        { status: 400 }
-      );
-    }
+    console.log("Starting Gemini classification...");
 
-    // Step 1: AI only classifies the image
+    // Gemini classification
     const classification = await classifyWasteImage(
       body.imageBase64,
       body.imageMimeType
     );
 
-    const complaintRef = db.collection("complaints").doc();
+    console.log("Gemini classification:", classification);
 
-    const now = new Date().toISOString();
+    const createdAt = new Date().toISOString();
 
-    // Step 2: Run the decision engine
+    // Decision Engine
     const decision = await runDecisionEngine({
       wasteType: classification.wasteType,
       sizeCategory: classification.sizeCategory,
       lat: body.lat,
       lng: body.lng,
-      createdAt: now,
+      createdAt,
       reportCount: 1,
     });
 
-    // Step 3: If duplicate, increase the original report count
-    if (decision.isDuplicate && decision.duplicateOf) {
-      const duplicateRef = db
-        .collection("complaints")
-        .doc(decision.duplicateOf);
+    console.log("Decision engine result:", decision);
 
-      const duplicateSnapshot = await duplicateRef.get();
-
-      if (duplicateSnapshot.exists) {
-        const duplicateData =
-          duplicateSnapshot.data() as Complaint;
-
-        await duplicateRef.update({
-          reportCount: (duplicateData.reportCount || 1) + 1,
-        });
-      }
-    }
-
-    // Step 4: Create the complaint document
-    const complaint: Complaint = {
-      id: complaintRef.id,
-
+    // Complaint object
+    const complaint = {
       wasteType: classification.wasteType,
       sizeCategory: classification.sizeCategory,
 
@@ -114,20 +86,24 @@ export async function POST(request: NextRequest) {
 
       status: "open",
 
-      createdAt: now,
+      createdAt,
     };
 
-    await complaintRef.set(complaint);
+    // Save to Firebase
+    const docRef = await db
+      .collection("complaints")
+      .add(complaint);
 
-    return NextResponse.json(
-      {
-        success: true,
-        complaint,
-      },
-      { status: 201 }
-    );
+    console.log("Complaint saved:", docRef.id);
+
+    return NextResponse.json({
+      success: true,
+      complaintId: docRef.id,
+      classification,
+      decision,
+    });
   } catch (error) {
-    console.error("Complaint creation error:", error);
+    console.error("Complaint submission error:", error);
 
     return NextResponse.json(
       {
@@ -135,7 +111,43 @@ export async function POST(request: NextRequest) {
         error:
           error instanceof Error
             ? error.message
-            : "Failed to create complaint.",
+            : "Complaint submission failed",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// ==========================================
+// GET ALL COMPLAINTS
+// ==========================================
+
+export async function GET() {
+  try {
+    const snapshot = await db
+      .collection("complaints")
+      .orderBy("createdAt", "desc")
+      .get();
+
+    const complaints = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    return NextResponse.json({
+      success: true,
+      complaints,
+    });
+  } catch (error) {
+    console.error("Fetching complaints error:", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch complaints",
       },
       { status: 500 }
     );

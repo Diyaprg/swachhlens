@@ -18,7 +18,7 @@ export async function GET() {
       complaints,
     });
   } catch (error) {
-    console.error("Dashboard complaints error:", error);
+    console.error("Dashboard API error:", error);
 
     return NextResponse.json(
       {

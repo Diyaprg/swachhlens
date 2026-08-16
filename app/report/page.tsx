@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState ,type FormEvent} from "react";
 
 type LocationData = {
   latitude: number;
@@ -14,18 +14,41 @@ const wasteTypes = [
   { name: "Construction", icon: "🧱" },
   { name: "Litter", icon: "🛍️" },
   { name: "Other", icon: "•••" },
+  
 ];
 
 export default function Home() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [photo, setPhoto] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [aiResult, setAiResult] = useState<any>(null);
+const [loadingAI, setLoadingAI] = useState(false);
   const [fileName, setFileName] = useState("");
   const [location, setLocation] = useState<LocationData | null>(null);
   const [locationLoading, setLocationLoading] = useState(false);
   const [selectedType, setSelectedType] = useState("Garbage");
   const [comment, setComment] = useState("");
   const [submitted, setSubmitted] = useState(false);
+
+  const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.readAsDataURL(file);
+
+    reader.onload = () => {
+      const result = reader.result as string;
+
+      // "data:image/jpeg;base64,...." se sirf Base64 part nikalo
+      const base64 = result.split(",")[1];
+
+      resolve(base64);
+    };
+
+    reader.onerror = (error) => reject(error);
+  });
+};
 
   const handlePhoto = (file?: File) => {
     if (!file) return;
@@ -34,6 +57,7 @@ export default function Home() {
 
     setPhoto(imageUrl);
     setFileName(file.name);
+    setSelectedFile(file);
   };
 
   const handleFileChange = (
@@ -85,7 +109,7 @@ export default function Home() {
     );
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async(event: React.FormEvent) => {
     event.preventDefault();
 
     if (!photo) {
@@ -97,7 +121,48 @@ export default function Home() {
       alert("Please capture your location.");
       return;
     }
+setLoadingAI(true);
 
+if (!selectedFile) {
+  alert("Please select a photo.");
+  setLoadingAI(false);
+  return;
+}
+
+const imageBase64 = await fileToBase64(selectedFile);
+
+try {
+  const response = await fetch("/api/complaints", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      imageBase64: imageBase64,
+      imageMimeType: selectedFile.type,
+      lat: location.latitude,
+      lng: location.longitude,
+      comment,
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok || !data.success) {
+    throw new Error(data.error || "AI classification failed");
+  }
+
+  setAiResult(data.classification);
+} catch (error) {
+  alert(
+    error instanceof Error
+      ? error.message
+      : "Something went wrong while analyzing the image."
+  );
+  return;
+} finally {
+  setLoadingAI(false);
+}
     setSubmitted(true);
   };
 

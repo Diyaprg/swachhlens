@@ -42,3 +42,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+firebase-service-account.json
+firebase-service-account.json.json
+swachhlens-449ba-9f6447c284cb.json
